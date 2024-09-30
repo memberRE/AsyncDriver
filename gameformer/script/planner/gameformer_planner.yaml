@@ -1,0 +1,3 @@
+gameformer_planner:
+  _target_: gameformer.planner.Planner
+  _convert_: 'all'

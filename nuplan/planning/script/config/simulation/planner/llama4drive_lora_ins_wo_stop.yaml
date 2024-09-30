@@ -1,0 +1,10 @@
+llama4drive_lora_ins_wo_stop:
+  _target_: llama2.planner.llama4drive_planner.LLAMA4DrivePlanner
+  _convert_: 'all'
+  disable_refpath: False
+  model_cfg:
+    - model_name_or_path: null
+    - finetune_model_path: null
+    - adapter_fusion: True
+    - enable_lora: True
+    - ins_wo_stop: True
