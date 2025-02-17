@@ -114,7 +114,7 @@ bash train_script/train_qa/train_driveqa.sh <gpu_ids>
 - **Train Reasoning1K:**
 
 ~~~
-bash train_script/train_qa/train_driveqa.sh <gpu_ids>
+bash train_script/train_qa/train_mixed_desion_qa.sh <gpu_ids>
 ~~~
 
 - **Final stage:**
