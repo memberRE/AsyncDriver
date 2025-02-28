@@ -79,7 +79,7 @@ DATASET_PARAMS = [
     f'+planner.{PLANNER}.llm_inf_step={args.llm_inf_step}',
     f'+planner.{PLANNER}.short_ins={args.short_ins}',
     f'scenario_filter.scenario_types=[{case_type[args.type]}]',
-    'scenario_filter.num_scenarios_per_type=1',
+    'scenario_filter.num_scenarios_per_type=20',
     "hydra.searchpath=[pkg://nuplan.planning.script.config.common, pkg://nuplan.planning.script.experiments]",
     #"hydra.searchpath=[file:///abspath/to/asyncdriver/nuplan/planning/script/config/common, file:///abspath/to/asyncdriver/nuplan/planning/script/experiments]",
 ]
