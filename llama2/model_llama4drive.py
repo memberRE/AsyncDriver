@@ -60,7 +60,7 @@ from peft import (  # noqa: E402
     set_peft_model_state_dict,
 )
 
-logger = logging.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 _CONFIG_FOR_DOC = "LlamaConfig"
 
