@@ -83,7 +83,7 @@ bash train_script/inference/with_interval.sh <gpuid> <scenario_type_id> <interva
 To evaluate the model with `pdm_scorer`, use:
 
 ~~~
-bash train_script/inference/with_interval.sh <gpuid> <scenario_type_id>
+bash train_script/inference/with_pdm_scorer.sh <gpuid> <scenario_type_id>
 ~~~
 
 
@@ -131,7 +131,7 @@ If you find this repository useful for your research, please consider giving us 
 ~~~
 @inproceedings{chen2024asynchronous,
  author = {Yuan Chen, Zi-han Ding, Ziqin Wang, Yan Wang, Lijun Zhang, Si Liu},
- title = {Asynchronous Large Language Model Enhanced Planner for Autonomous Drivingr},
+ title = {Asynchronous Large Language Model Enhanced Planner for Autonomous Driving},
  booktitle={Proceedings of the European Conference on Computer Vision (ECCV)},
  year = {2024}}
 ~~~
