@@ -194,7 +194,10 @@ class LLAMA4DrivePlanner(BaseGFPlanner):
                  short_ins=-1,
                  llm_inf_step=1,
                  model_cfg=None,
-                 model_urban: TorchModuleWrapper = None):
+                 model_urban: TorchModuleWrapper = None,
+                 onnx_model_path=None,
+                 tensorrt_model_path=None,
+                 inference_model_type=None):
         super().__init__(disable_refpath=disable_refpath)
         if isinstance(model_cfg, list):
             model_cfg = {k:v for d in model_cfg for k,v in d.items()}
@@ -206,6 +209,9 @@ class LLAMA4DrivePlanner(BaseGFPlanner):
         self.model_name_or_path = model_name_or_path
         self.near_multiple_vehicles = near_multiple_vehicles
         self.short_ins = short_ins
+        self.onnx_model_path = onnx_model_path
+        self.tensorrt_model_path = tensorrt_model_path
+        self.inference_model_type = inference_model_type
         logging.error(f'Ins mode: {ins_mode}')
         if ins_mode in ['gt', 'plain_ref']:
             ins_mode = None
@@ -217,6 +223,9 @@ class LLAMA4DrivePlanner(BaseGFPlanner):
         model_cfg['lora_r'] = lora_r
         model_cfg['near_multiple_vehicles'] = near_multiple_vehicles
         model_cfg['model_name_or_path'] = model_name_or_path
+        model_cfg['onnx_model_path'] = onnx_model_path
+        model_cfg['tensorrt_model_path'] = tensorrt_model_path
+        model_cfg['inference_model_type'] = inference_model_type
         self._model_cfg = model_cfg
         self.scenario = scenario
         self.sub_planner = sub_planner

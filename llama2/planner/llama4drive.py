@@ -69,6 +69,9 @@ def get_model(model_name_or_path=None,
 
     config.llm_inf_step = kwargs.get('llm_inf_step', 1)
     config.lora_r = kwargs.get('lora_r', 16)
+    config.onnx_model_path = kwargs.get('onnx_model_path', None)
+    config.tensorrt_model_path = kwargs.get('tensorrt_model_path', None)
+    config.inference_model_type = kwargs.get('inference_model_type', None)
 
     if add_special_tokens is not None:
         additional_special_tokens = add_special_tokens.split(',')

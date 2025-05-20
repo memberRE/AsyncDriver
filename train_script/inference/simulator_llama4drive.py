@@ -42,6 +42,10 @@ def parse_args():
     parser.add_argument('--refine', action='store_true')
     parser.add_argument('--base_model', type=str, default=None)
     parser.add_argument('--simulation_root_path', type=str, default=None)
+    # 新增用于ONNX和TensorRT模型路径的参数
+    parser.add_argument('--onnx_model_path', type=str, default=None, help='Path to the ONNX model')
+    parser.add_argument('--tensorrt_model_path', type=str, default=None, help='Path to the TensorRT model')
+    parser.add_argument('--inference_model_type', type=str, default=None, help='Type of inference model to use (torch onnx tensorrt)')
     return parser.parse_args()
 
 args = parse_args()
@@ -83,6 +87,15 @@ DATASET_PARAMS = [
     "hydra.searchpath=[pkg://nuplan.planning.script.config.common, pkg://nuplan.planning.script.experiments]",
     #"hydra.searchpath=[file:///abspath/to/asyncdriver/nuplan/planning/script/config/common, file:///abspath/to/asyncdriver/nuplan/planning/script/experiments]",
 ]
+print("--------",args.inference_model_type)
+# 新增两个参数写入config
+if args.onnx_model_path is not None:
+    DATASET_PARAMS.append(f'+planner.{PLANNER}.onnx_model_path={args.onnx_model_path}')
+if args.tensorrt_model_path is not None:
+    DATASET_PARAMS.append(f'+planner.{PLANNER}.tensorrt_model_path={args.tensorrt_model_path}')
+if args.inference_model_type is not None:
+    DATASET_PARAMS.append(f'+planner.{PLANNER}.inference_model_type={args.inference_model_type}')
+
 
 # Name of the experiment
 EXPERIMENT = 'llama4drive_experiment'

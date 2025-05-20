@@ -51,6 +51,8 @@ from gameformer.predictor import LLMEnhancedGameFormer
 from gameformer.predictor_adapter import LLMEnhancedGameFormer_Adapter
 from gameformer.predictor_modules import CrossTransformer
 from gameformer.train_utils import *
+from llama2.trt_infer_singleton import TRTInferSingleton
+from llama2.trt_infer_singleton import ONNXInferSingleton
 
 from peft import (  # noqa: E402
     LoraConfig,
@@ -670,6 +672,9 @@ class LlamaModel(LlamaPreTrainedModel):
         self.special_token_id = config.special_token_dict['<map>']
         # Initialize weights and apply final processing
         self.post_init()
+        self.onnx_model_path = config.onnx_model_path
+        self.tensorrt_model_path = config.tensorrt_model_path
+        self.inference_model_type = config.inference_model_type
 
     def get_input_embeddings(self):
         return self.embed_tokens
@@ -815,6 +820,7 @@ class LlamaModel(LlamaPreTrainedModel):
             attention_mask = torch.ones(
                 (batch_size, seq_length_with_past), dtype=torch.bool, device=inputs_embeds.device
             )
+        attention_mask_2d = attention_mask
         attention_mask = self._prepare_decoder_attention_mask(
             attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
         )
@@ -833,61 +839,71 @@ class LlamaModel(LlamaPreTrainedModel):
         all_self_attns = () if output_attentions else None
         next_decoder_cache = () if use_cache else None
 
-        for idx, decoder_layer in enumerate(self.layers):
-            if output_hidden_states:
-                all_hidden_states += (hidden_states,)
+        # Decide which inference engine to use: 'torch', 'onnx', or 'tensorrt'
+        inference_model_type = self.inference_model_type
+        print("the inference_model_type is: ",self.inference_model_type)
 
-            past_key_value = past_key_values[idx] if past_key_values is not None else None
+        if inference_model_type == 'torch':
+            for idx, decoder_layer in enumerate(self.layers):
+                if output_hidden_states:
+                    all_hidden_states += (hidden_states,)
 
-            if self.gradient_checkpointing and self.training:
+                past_key_value = past_key_values[idx] if past_key_values is not None else None
 
-                def create_custom_forward(module):
-                    def custom_forward(*inputs):
-                        # None for past_key_value
-                        return module(*inputs, past_key_value, output_attentions)
+                if self.gradient_checkpointing and self.training:
 
-                    return custom_forward
+                    def create_custom_forward(module):
+                        def custom_forward(*inputs):
+                            # None for past_key_value
+                            return module(*inputs, past_key_value, output_attentions)
+                        return custom_forward
 
-                layer_outputs = torch.utils.checkpoint.checkpoint(
-                    create_custom_forward(decoder_layer),
-                    hidden_states,
-                    attention_mask,
-                    position_ids,
-                )
-            else:
-                layer_outputs = decoder_layer(
-                    hidden_states,
-                    attention_mask=attention_mask,
-                    position_ids=position_ids,
-                    past_key_value=past_key_value,
-                    output_attentions=output_attentions,
-                    use_cache=use_cache,
-                )
+                    layer_outputs = torch.utils.checkpoint.checkpoint(
+                        create_custom_forward(decoder_layer),
+                        hidden_states,
+                        attention_mask,
+                        position_ids,
+                    )
+                else:
+                    layer_outputs = decoder_layer(
+                        hidden_states,
+                        attention_mask=attention_mask,
+                        position_ids=position_ids,
+                        past_key_value=past_key_value,
+                        output_attentions=output_attentions,
+                        use_cache=use_cache,
+                    )
+                hidden_states = layer_outputs[0]
 
-            hidden_states = layer_outputs[0]
+                if use_cache:
+                    next_decoder_cache += (layer_outputs[2 if output_attentions else 1],)
 
-            if use_cache:
-                next_decoder_cache += (layer_outputs[2 if output_attentions else 1],)
+                if output_attentions:
+                    all_self_attns += (layer_outputs[1],)
 
-            if output_attentions:
-                all_self_attns += (layer_outputs[1],)
+            hidden_states = self.norm(hidden_states)
 
-        hidden_states = self.norm(hidden_states)
+        elif inference_model_type == 'onnx':
+            infer_engine = ONNXInferSingleton(self.onnx_model_path, providers=['CUDAExecutionProvider'])
+            hidden_states = infer_engine.infer_hidden_states(inputs_embeds, attention_mask_2d, position_ids)
 
-        # add hidden states from the last decoder layer
-        if output_hidden_states:
-            all_hidden_states += (hidden_states,)
+        elif inference_model_type == 'tensorrt':
+            infer_engine = TRTInferSingleton(engine_path=self.tensorrt_model_path, device_id=0)
+            hidden_states = infer_engine.infer_hidden_states(inputs_embeds, attention_mask_2d, position_ids)
 
-        next_cache = next_decoder_cache if use_cache else None
+        else:
+            raise ValueError(f"Unknown inference backend: {inference_model_type}")
+
+        return_dict = return_dict if return_dict is not None else True
         if not return_dict:
-            return tuple(v for v in [hidden_states, next_cache, all_hidden_states, all_self_attns] if v is not None)
+            return hidden_states, None, None, None
         
         return BaseModelOutputWithPastDrive(
             last_hidden_state=hidden_states,
-            past_key_values=next_cache,
-            hidden_states=all_hidden_states,
-            attentions=all_self_attns,
-            loca=loca,
+            past_key_values=None,
+            hidden_states=None,
+            attentions=None,
+            loca=[(torch.tensor(0), torch.tensor(0))],
         ), labels, new_inputs_attention_mask, return_special_toks_loc
 
 

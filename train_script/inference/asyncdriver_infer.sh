@@ -8,3 +8,6 @@ CUDA_VISIBLE_DEVICES=$1 python train_script/inference/simulator_llama4drive.py \
 --lora_r 8 \
 --type $2 \
 --simulation_root_path path/to/simulation_save_root_path \
+--onnx_model_path path/to/onnx_model_path \
+--tensorrt_model_path path/to/tensorrt_model_path \
+--inference_model_type torch \
